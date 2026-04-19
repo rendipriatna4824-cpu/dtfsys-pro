@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DTFSys Pro Ultimate Edition</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- QR Code & Scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Tesseract OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        glass: { 100: 'rgba(30, 41, 59, 0.7)', 200: 'rgba(15, 23, 42, 0.8)' },
+                        brand: { 500: '#3b82f6', 600: '#2563eb' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: radial-gradient(circle at top left, #0f172a, #020617);
+            color: #f8fafc;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-radius: 1rem;
+        }
+        .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+            outline: none;
+        }
+        .glass-btn {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 0.8));
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        .glass-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        /* Page transitions */
+        .page-content { display: none; animation: fadeIn 0.4s ease forwards; }
+        .page-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.8); }
+
+        #reader { width: 100%; border-radius: 0.5rem; overflow: hidden; border: 2px solid rgba(59, 130, 246, 0.5); }
+        #reader video { object-fit: cover; }
+        
+        .sidebar { transition: transform 0.3s ease; }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-sm sm:text-base">
+
+    <!-- Mobile Header -->
+    <div class="md:hidden fixed top-0 w-full glass-panel rounded-none border-b border-t-0 p-4 z-40 flex justify-between items-center">
+        <h1 class="font-bold text-xl text-brand-500">DTFSys Pro</h1>
+        <button id="mobileMenuBtn" class="p-2 bg-gray-800 rounded-lg"><i data-lucide="menu"></i></button>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar fixed md:relative z-50 w-64 h-full glass-panel rounded-none flex flex-col pt-16 md:pt-4">
+        <div class="px-6 mb-8 hidden md:block">
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-500">DTFSys Pro</h1>
+            <p class="text-xs text-gray-400 mt-1">Ultimate Edition</p>
+        </div>
+
+        <button id="closeSidebarBtn" class="md:hidden absolute top-4 right-4 p-2 text-gray-400 hover:text-white">
+            <i data-lucide="x"></i>
+        </button>
+
+        <nav class="flex-1 px-4 space-y-2 overflow-y-auto pb-6">
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors" data-target="scanNav">
+                <i data-lucide="scan"></i> Scan QR Pkg
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors" data-target="dashboardNav">
+                <i data-lucide="layout-dashboard"></i> Dashboard
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors" data-target="stockNav">
+                <i data-lucide="database"></i> Manajemen Stok
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors" data-target="galleryNav">
+                <i data-lucide="image"></i> Katalog DTF
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors" data-target="ocrNav">
+                <i data-lucide="file-text"></i> Scan Resi (OCR)
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors" data-target="roasNav">
+                <i data-lucide="calculator"></i> Kalkulator Profit
+            </a>
+            <a href="#" class="nav-link flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors" data-target="settingsNav">
+                <i data-lucide="settings"></i> Pengaturan
+            </a>
+            
+            <div class="mt-8 pt-4 border-t border-white/10">
+                <button onclick="syncData()" id="syncBtn" class="w-full flex items-center justify-center gap-2 py-3 px-4 glass-btn rounded-lg text-white font-medium">
+                    <i data-lucide="refresh-cw" id="syncIcon"></i> Sinkron File
+                </button>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 h-full overflow-y-auto p-4 md:p-8 pt-20 md:pt-8 w-full relative">
+
+        <!-- SCAN QR (HOME) -->
+        <div id="scanNav" class="page-content active max-w-4xl mx-auto">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-2">Scan QR Produk</h2>
+                <p class="text-gray-400">Pindai QR code pada kemasan untuk mengelola stok dengan lebih cepat.</p>
+            </div>
+
+            <div class="glass-panel p-4 md:p-6 mb-6 mx-auto w-full md:w-3/4 lg:w-1/2">
+                <div id="reader" class="mb-4 bg-black/50"></div>
+                <!-- Result Scan Container -->
+                <div id="scanResult" class="hidden text-center mt-6 p-4 rounded-lg bg-gray-800/50 border border-gray-700">
+                    <img id="scannedImage" src="" alt="Produk" class="w-32 h-32 object-cover rounded-xl mx-auto mb-4 border-2 border-brand-500 shadow-lg" onerror="this.src='https://placehold.co/150x150?text=No+Img'">
+                    <h3 id="scannedName" class="text-2xl font-bold text-white mb-1">Nama Produk</h3>
+                    <p id="scannedSku" class="text-gray-400 mb-2">SKU: ---</p>
+                    <p class="text-lg">Stok Saat Ini: <span id="scannedStock" class="font-bold text-brand-500 text-xl">0</span></p>
+
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <button onclick="handleScanAction('reduce')" class="py-4 rounded-xl bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 text-red-100 font-bold text-lg flex items-center justify-center gap-2 transition shadow-lg relative overflow-hidden group">
+                            <span class="absolute inset-0 bg-red-500 opacity-0 group-hover:opacity-20 transition"></span>
+                            <i data-lucide="minus-circle"></i> KURANGI STOK
+                        </button>
+                        <button onclick="handleScanAction('add')" class="py-4 rounded-xl bg-green-500/20 hover:bg-green-500/40 border border-green-500/50 text-green-100 font-bold text-lg flex items-center justify-center gap-2 transition shadow-lg relative overflow-hidden group">
+                            <span class="absolute inset-0 bg-green-500 opacity-0 group-hover:opacity-20 transition"></span>
+                            <i data-lucide="plus-circle"></i> TAMBAH STOK
+                        </button>
+                    </div>
+                    <button onclick="resetScan()" class="mt-4 text-sm text-gray-400 hover:text-white underline">Scan Ulang barcode yg lain</button>
+                </div>
+                
+                <div class="flex justify-center gap-4 mt-4" id="scanControls">
+                    <button onclick="startScanner()" class="glass-btn px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i data-lucide="camera"></i> Buka Kamera Viewer
+                    </button>
+                    <button onclick="stopScanner()" class="px-6 py-2 rounded-lg font-medium bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/40 hidden" id="stopCameraBtn">
+                        Tutup Kamera
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboardNav" class="page-content">
+            <h2 class="text-3xl font-bold mb-6">Dashboard Ringkasan</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="glass-panel p-6 border-t-4 border-t-blue-500">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-blue-500/20 rounded-lg text-blue-400"><i data-lucide="package" class="w-8 h-8"></i></div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Total Produk</p>
+                            <h3 id="dashTotalProd" class="text-2xl font-bold">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel p-6 border-t-4 border-t-purple-500">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-purple-500/20 rounded-lg text-purple-400"><i data-lucide="database" class="w-8 h-8"></i></div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Total Item Stok</p>
+                            <h3 id="dashTotalStock" class="text-2xl font-bold">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel p-6 border-t-4 border-t-red-500">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-red-500/20 rounded-lg text-red-400"><i data-lucide="alert-triangle" class="w-8 h-8"></i></div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Stok Rendah (<span id="dashLowLimit">5</span>)</p>
+                            <h3 id="dashLowStock" class="text-2xl font-bold text-red-400">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel p-6 border-t-4 border-t-green-500">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-green-500/20 rounded-lg text-green-400"><i data-lucide="trending-up" class="w-8 h-8"></i></div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Est Profit Stok Jual</p>
+                            <h3 id="dashEstProfit" class="text-xl font-bold text-green-400">Rp 0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i data-lucide="alert-circle" class="text-red-400"></i> Peringatan Stok Rendah</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/10 text-gray-400">
+                                <th class="p-3">SKU Code</th>
+                                <th class="p-3">Nama Produk (Variant)</th>
+                                <th class="p-3 text-center">Sisa Stok</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lowStockTableBody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MANAJEMEN STOK -->
+        <div id="stockNav" class="page-content">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-3xl font-bold">Data Manajemen Stok</h2>
+                <button onclick="openProductModal()" class="glass-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <i data-lucide="plus"></i> Entri Produk Baru
+                </button>
+            </div>
+            
+            <div class="glass-panel p-4 mb-4 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-800/30">
+                <div class="relative w-full sm:w-80">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                    <input type="text" id="searchStock" onkeyup="renderStockTable()" placeholder="Cari by Nama atau SKU kode..." class="w-full pl-10 pr-4 py-2 rounded-lg glass-input">
+                </div>
+            </div>
+
+            <div class="glass-panel overflow-hidden" style="min-height: 400px;">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left whitespace-nowrap">
+                        <thead class="bg-black/20 border-b border-white/10 text-gray-400 text-sm">
+                            <tr>
+                                <th class="p-4">SKU</th>
+                                <th class="p-4">Artwork</th>
+                                <th class="p-4">Nama Produk</th>
+                                <th class="p-4 text-center">Stok Qty</th>
+                                <th class="p-4 text-right">Modal/Hpp Dasar</th>
+                                <th class="p-4 text-right">Hrg Jual Target</th>
+                                <th class="p-4 text-right">Est. Profit/Pcs</th>
+                                <th class="p-4 text-center">Tindakan Khusus</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockTableBody" class="divide-y divide-white/5">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- GALLERY DTF -->
+        <div id="galleryNav" class="page-content">
+            <h2 class="text-3xl font-bold mb-6 flex items-center gap-2"><i data-lucide="layout-grid" class="text-brand-500"></i> Gallery Katalog Desain DTF</h2>
+            <div class="glass-panel p-4 mb-6 relative overflow-hidden">
+                <div class="absolute inset-0 bg-blue-500/5 pointer-events-none"></div>
+                 <div class="relative z-10 w-full md:w-1/3">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                    <input type="text" id="searchGallery" onkeyup="renderGallery()" placeholder="Filter berdasar teks desain..." class="w-full pl-10 pr-4 py-2 rounded-full glass-input">
+                </div>
+            </div>
+            <div id="galleryGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+
+        <!-- SCAN RESI OCR -->
+        <div id="ocrNav" class="page-content max-w-3xl mx-auto">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-2">Pindai Resi Marketplace (OCR)</h2>
+                <p class="text-gray-400">Foto label pengiriman (Shopee, Tokopedia, TikTok, Lazada) sistem cerdas akan membaca SKU otomatis.</p>
+            </div>
+
+            <div class="glass-panel p-6 text-center">
+                <div class="border-2 border-dashed border-white/20 hover:border-brand-500 rounded-xl p-8 mb-6 bg-black/20 relative hover:bg-white/5 transition cursor-pointer group" onclick="document.getElementById('receiptInput').click()">
+                    <i data-lucide="camera" class="w-16 h-16 mx-auto mb-4 text-brand-500 group-hover:scale-110 transition"></i>
+                    <h3 class="text-lg font-medium mb-1 group-hover:text-brand-300">Sentuh untuk Upload / Potret Resi</h3>
+                    <p class="text-sm text-gray-400">Ideal untuk format gambar JPG, PNG tajam</p>
+                    <input type="file" id="receiptInput" accept="image/*" class="hidden" onchange="handleReceiptUpload(event)">
+                </div>
+
+                <div id="ocrPreviewContainer" class="hidden mb-6">
+                    <img id="ocrPreviewImg" src="" class="max-h-64 mx-auto rounded-lg border border-white/20 mb-4 shadow-xl">
+                    <button onclick="processOCR()" id="btnProcessOcr" class="glass-btn px-6 py-3 rounded-lg font-bold text-lg flex items-center justify-center gap-2 mx-auto w-full md:w-1/2">
+                        <i data-lucide="scan-face"></i> Ekstrak SKU dari Gambar via AI
+                    </button>
+                    <!-- Progress Bar -->
+                    <div id="ocrProgressContainer" class="hidden w-full md:w-1/2 mx-auto mt-4 p-4 bg-gray-900 rounded-lg">
+                        <p class="text-sm text-gray-400 mb-2 flex justify-between font-mono animate-pulse"><span id="ocrStatusText">Menganalisis pola teks kotor...</span> <span id="ocrPercent">0%</span></p>
+                        <div class="w-full bg-gray-800 rounded-full h-3 border border-gray-700">
+                            <div id="ocrProgressBar" class="bg-brand-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ocrResultBox" class="hidden text-left p-5 rounded-lg bg-black/40 border-l-4 border-brand-500 shadow-xl">
+                    <h4 class="font-bold text-lg mb-3 text-brand-400 flex items-center gap-2"><i data-lucide="check-circle-2"></i> Kecocokan SKU Terdeteksi:</h4>
+                    <div id="ocrMatchedSkus" class="space-y-3 mb-6">
+                        <!-- SKUs injected -->
+                    </div>
+                    <button onclick="confirmOcrReduction()" class="py-3 px-4 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/40 border border-green-500/30 w-full font-bold flex justify-center gap-2 items-center text-lg transition">
+                        <i data-lucide="check-square"></i> KONFIRMASI PENGURANGAN STOK
+                    </button>
+                    <div class="mt-6 pt-4 border-t border-white/10 opacity-60 hover:opacity-100 transition">
+                        <h4 class="text-xs text-gray-400 mb-1 flex items-center gap-1"><i data-lucide="file-json" class="w-3 h-3"></i> Teks Logika Mentah (Raw Output):</h4>
+                        <p id="ocrRawText" class="text-xs text-gray-500 break-words h-24 overflow-y-auto bg-black p-2 rounded border border-white/5 font-mono leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KALKULATOR ROAS -->
+        <div id="roasNav" class="page-content max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold mb-6">Kalkulator Simulasi ROAS & Profit</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Form Inputs -->
+                <div class="glass-panel p-6 md:col-span-1">
+                    <h3 class="font-bold mb-4 text-lg border-b border-white/10 pb-2">Variabel Target (Ads)</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Simulasi Berdasar Produk</label>
+                            <select id="calcSelectProduct" onchange="runCalculator()" class="w-full px-3 py-2 rounded-lg glass-input bg-gray-800">
+                                <option value="">-- Pilih Produk Reference --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Ekspektasi Penjualan (Qty)</label>
+                            <div class="relative">
+                                <input type="number" id="calcTargetQty" value="100" oninput="runCalculator()" class="w-full pl-3 pr-10 py-2 rounded-lg glass-input">
+                                <span class="absolute right-3 top-2 text-gray-500">pcs</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Anggaran Iklan (Adspend)</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2 text-gray-500">Rp</span>
+                                <input type="number" id="calcAdSpend" value="500000" oninput="runCalculator()" class="w-full pl-8 pr-3 py-2 rounded-lg glass-input">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Result -->
+                <div class="glass-panel p-6 md:col-span-2">
+                    <h3 class="font-bold mb-4 text-lg border-b border-white/10 pb-2">Proyeksi Margin & Return Statement</h3>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
+                        <div class="p-4 bg-black/20 rounded-xl relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-500/10 rounded-full"></div>
+                            <p class="text-xs text-gray-400 mb-1 z-10 relative">Gross Revenue (Omset)</p>
+                            <p id="resOmset" class="text-2xl font-bold text-blue-400 z-10 relative">Rp 0</p>
+                        </div>
+                        <div class="p-4 bg-black/20 rounded-xl border border-brand-500/30 relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 w-16 h-16 bg-brand-500/10 rounded-full"></div>
+                            <p class="text-xs text-gray-400 mb-1 z-10 relative">Multiplier (ROAS) Return</p>
+                            <p id="resRoas" class="text-2xl font-bold text-brand-400 z-10 relative">0.00 x</p>
+                        </div>
+                        <div class="p-4 bg-black/20 rounded-xl relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 w-16 h-16 bg-red-500/10 rounded-full"></div>
+                            <p class="text-xs text-gray-400 mb-1 z-10 relative">Capital Outflow (COGS + Admin)</p>
+                            <p id="resCost" class="text-xl font-bold text-red-400 z-10 relative">Rp 0</p>
+                        </div>
+                        <div class="p-4 bg-green-500/10 rounded-xl border border-green-500/30 relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 w-16 h-16 bg-green-500/20 rounded-full"></div>
+                            <p class="text-xs text-green-400 mb-1 z-10 relative">NET PROFIT (Laba Bersih)</p>
+                            <p id="resNetProfit" class="text-2xl font-bold text-green-400 z-10 relative">Rp 0</p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-gray-800/50 border border-gray-700/50 rounded-lg text-xs leading-relaxed text-gray-300">
+                        <i data-lucide="info" class="inline w-4 h-4 mr-1 text-brand-400"></i>
+                        Kalkulasi memotong otomatis Biaya Platform/Admin Marketplace (<span id="txtSetAdmin" class="font-bold text-white"></span>%), Biaya Flat transaksi, dan Biaya Packing Operasional diatur pada halaman Pengaturan Globlal.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="settingsNav" class="page-content max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold mb-6">Master Pengaturan Global</h2>
+            
+            <div class="glass-panel p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="font-bold text-lg mb-4 text-brand-400 border-b border-white/10 pb-2 flex items-center gap-2"><i data-lucide="percent"></i> Cost & Fees Core</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Persentase Potongan Admin (%)</label>
+                            <input type="number" id="setAdminFee" step="0.1" class="w-full px-3 py-2 rounded-lg glass-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Biaya Admin Flat Rp per Resi (Rp)</label>
+                            <input type="number" id="setFlatFee" class="w-full px-3 py-2 rounded-lg glass-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Biaya Operasional Dasar per Pcs (Rp)</label>
+                            <input type="number" id="setOpCost" class="w-full px-3 py-2 rounded-lg glass-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-lg mb-4 text-brand-400 border-b border-white/10 pb-2 flex items-center gap-2"><i data-lucide="sliders"></i> Logika Aplikasi Pribadi</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Batas Quantitas Low Stock Indicator</label>
+                            <input type="number" id="setLowStock" class="w-full px-3 py-2 rounded-lg glass-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">URL Google Apps Script (Web App Endpoint)</label>
+                            <input type="text" id="setGasUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 rounded-lg glass-input">
+                            <p class="text-xs text-gray-500 mt-1">Digunakan untuk real-time logging (POST) transaksi harian</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">URL DB CSV Induk Publik</label>
+                            <input type="text" id="setCsvUrl" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-2o5SdBm5-iH3ymsfwauHmFSO5mRLXt9rZ7tl-zaNhc4LIlp4ENauW0Ph07yL_uRqxltiLSZBG4SZ/pub?output=csv" class="w-full px-3 py-2 rounded-lg bg-gray-900 text-gray-500 border border-gray-700 cursor-not-allowed" disabled>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="saveSettings()" class="glass-btn px-8 py-3 rounded-lg font-bold text-lg flex items-center gap-2 shadow-[0_4px_14px_0_rgba(59,130,246,0.39)]">
+                    <i data-lucide="save"></i> Update Storage Pengaturan
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Form Produk -->
+    <div id="productModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto relative animate-[fadeIn_0.3s_ease] border-t-4 border-t-brand-500">
+            <button onclick="closeProductModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-800 rounded-full p-1"><i data-lucide="x"></i></button>
+            <h3 id="modalTitle" class="text-2xl font-bold mb-4 flex items-center gap-2"><i data-lucide="box"></i> Tambah Produk Baru</h3>
+            
+            <input type="hidden" id="prodId">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="col-span-full">
+                    <label class="block text-sm text-gray-400 mb-1">Nama Produk / Varian</label>
+                    <input type="text" id="prodName" required class="w-full px-3 py-2 rounded-lg glass-input focus:ring-2 focus:ring-brand-500" placeholder="Misal: DTF Print Logo Tiger">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Kode SKU Barcode</label>
+                    <input type="text" id="prodSku" required class="w-full px-3 py-2 rounded-lg glass-input uppercase font-mono tracking-widest text-brand-300" placeholder="SKU-XXX">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Mutasi Awal (Stok Fisik)</label>
+                    <input type="number" id="prodStock" required value="0" class="w-full px-3 py-2 rounded-lg glass-input font-bold text-lg">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Harga Modal Pembelian / HPP (Rp)</label>
+                    <input type="number" id="prodCost" required value="0" class="w-full px-3 py-2 rounded-lg glass-input">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Target Harga Jual Market (Rp)</label>
+                    <input type="number" id="prodPrice" required value="0" class="w-full px-3 py-2 rounded-lg glass-input font-bold text-brand-400">
+                </div>
+                <div class="col-span-full border-t border-white/10 pt-4 mt-2">
+                    <label class="block text-sm text-gray-400 mb-1">URL Ext. Gambar Mockup Produk</label>
+                    <input type="text" id="prodImage" placeholder="https://..." class="w-full px-3 py-2 rounded-lg glass-input mb-3">
+                    <div class="bg-green-500/10 border border-green-500/20 p-3 rounded-lg flex justify-between items-center">
+                        <span class="text-xs text-green-300">Simulasi Net Profit Dasar per Unit terjual:</span>
+                        <span id="prodPreviewProfit" class="font-bold text-green-400 text-lg">Rp 0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-4">
+                <button onclick="closeProductModal()" class="px-5 py-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-white transition border border-gray-600">Batal Cancel</button>
+                <button onclick="saveProduct()" class="glass-btn px-6 py-2 rounded-lg font-bold text-white transition flex items-center gap-2">
+                    <i data-lucide="check"></i> Approve Modifikasi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal QR Code Generator -->
+    <div id="qrModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel p-6 w-full max-w-sm text-center relative pointer-events-auto shadow-2xl border border-white/20">
+            <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-800 rounded-full p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <h3 class="text-xl font-bold mb-1">Labeling Mesin QR</h3>
+            <p id="qrProdName" class="text-sm text-gray-400 mb-6 font-medium">Nama Produk</p>
+            
+            <div class="bg-white p-4 rounded-xl inline-block mx-auto mb-4 border-4 border-gray-200" id="qrCodeContainer">
+                <!-- QR generated here -->
+            </div>
+            <p id="qrProdSku" class="text-lg font-mono font-bold text-brand-500 tracking-widest bg-black/40 px-3 py-1 rounded inline-block">SKU</p>
+            
+            <button onclick="downloadQR()" class="mt-6 w-full py-3 bg-brand-600 hover:bg-brand-500 rounded-xl font-bold transition flex justify-center items-center gap-2">
+                <i data-lucide="download"></i> Simpan Gambar Sticker Label
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Init Lucide Icons
+        lucide.createIcons();
+
+        // ---------------------------
+        // Global State & Data Settings
+        // ---------------------------
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyEH6rKQxmwvWoxwbtQ574Axq8leT7743R9fSHRwzVZ3sSCDaPqDYWN39mN9Ixw67WONA/exec";
+        const defaultSettings = { adminFee: 7.5, flatFee: 1250, opCost: 800, lowStock: 5, gasUrl: GAS_URL };
+        let settings = JSON.parse(localStorage.getItem('dtf_settings')) || defaultSettings;
+        if (!settings.gasUrl) settings.gasUrl = GAS_URL;
+        let products = JSON.parse(localStorage.getItem('dtf_products')) || [];
+        const csvUrl = GAS_URL + "?action=getProducts";
+
+        // Helpers formatter
+        const formatRp = (num) => 'Rp ' + Number(num||0).toLocaleString('id-ID');
+        const calculateProfit = (price, cost) => {
+            const admin = price * (settings.adminFee / 100);
+            return Math.round(price - cost - admin - settings.flatFee - settings.opCost);
+        };
+        const generateId = () => Math.random().toString(36).substr(2, 9);
+        
+        // Log tx to external server seamlessly
+        const logTransaction = async (action, sku, name, qtyChange, user = 'Operator WebApp') => {
+            const timeStr = new Date().toLocaleString('id-ID');
+            console.log(`[SYS-EVENT] ${timeStr} | Act: ${action} | ${sku} | Margin: ${qtyChange}`);
+            if (settings.gasUrl) {
+                try {
+                    const fd = new FormData();
+                    fd.append('action', action);
+                    fd.append('sku', sku);
+                    fd.append('name', name);
+                    fd.append('qty', qtyChange);
+                    fd.append('timestamp', timeStr);
+                    fd.append('user', user);
+                    fetch(settings.gasUrl, { method: 'POST', mode: 'no-cors', body: fd }).catch(e=>{});
+                } catch(e) {}
+            }
+        };
+
+        const saveData = () => localStorage.setItem('dtf_products', JSON.stringify(products));
+
+        // ---------------------------
+        // Structural Navigation
+        // ---------------------------
+        const navLinks = document.querySelectorAll('.nav-link');
+        const pages = document.querySelectorAll('.page-content');
+        const sidebar = document.getElementById('sidebar');
+
+        const switchPage = (targetId) => {
+            // Hide all pages & Show targeting mapping
+            pages.forEach(p => p.classList.remove('active'));
+            document.getElementById(targetId).classList.add('active');
+            
+            // Visual style nav links
+            navLinks.forEach(n => n.classList.remove('bg-white/10', 'text-brand-400', 'border-l-4', 'border-brand-500'));
+            const activeLink = document.querySelector(`[data-target="${targetId}"]`);
+            if(activeLink) activeLink.classList.add('bg-white/10', 'text-brand-400', 'border-l-4', 'border-brand-500');
+
+            if(window.innerWidth < 768) sidebar.classList.remove('open');
+            
+            // Re-render UI hooks based on route
+            if(targetId === 'dashboardNav') updateDashboard();
+            if(targetId === 'stockNav') renderStockTable();
+            if(targetId === 'galleryNav') renderGallery();
+            if(targetId === 'settingsNav') loadSettingsForm();
+            if(targetId === 'roasNav') runCalculator();
+            
+            // Automatically Stop Camera HW hook on navigation swap
+            if(targetId !== 'scanNav' && html5QrcodeScanner && html5QrcodeScanner.getState() === 2) {
+                stopScanner();
+            }
+        };
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchPage(link.dataset.target);
+            });
+        });
+
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => sidebar.classList.add('open'));
+        document.getElementById('closeSidebarBtn').addEventListener('click', () => sidebar.classList.remove('open'));
+
+        // ---------------------------
+        // Logic Data & Google Sheet Sync Hub
+        // ---------------------------
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (products.length === 0) {
+                // If clean slate offline boot, try pulling cloud records initially
+                await syncData(true);
+            }
+            switchPage('scanNav'); // Requirement: Default App page is Scanner.
+            updateCalcDropdown();
+        });
+
+        async function syncData(isInit = false) {
+            const btn = document.getElementById('syncBtn');
+            const icon = document.getElementById('syncIcon');
+            if(!isInit) {
+                btn.classList.add('opacity-50', 'pointer-events-none');
+                icon.classList.add('animate-spin');
+            }
+
+            try {
+                const res = await fetch(GAS_URL + '?action=getProducts');
+                const json = await res.json();
+
+                if(json.status === 'ok' && json.data && json.data.length > 0) {
+                    const newProducts = json.data.map(p => ({
+                        id: p.id || generateId(),
+                        sku: p.sku || '',
+                        name: p.nama || '',
+                        stock: parseInt(p.stok) || 0,
+                        price: parseInt(p.harga) || 0,
+                        cost: parseInt(p.hpp) || 0,
+                        image: p.gambar || ''
+                    }));
+                    products = newProducts;
+                    saveData();
+                    if(!isInit) Swal.fire({icon: 'success', title: 'Sinkron Berhasil!', text: newProducts.length + ' produk dimuat dari Spreadsheet.', background:'#1f2937', color:'#fff', timer: 2000, showConfirmButton:false});
+                    updateDashboard();
+                    renderStockTable();
+                    updateCalcDropdown();
+                } else {
+                    if(!isInit) Swal.fire({icon: 'info', title: 'Spreadsheet Masih Kosong', text: 'Tambahkan produk lewat menu Manajemen Stok.', background:'#1f2937', color:'#fff', timer: 2500, showConfirmButton:false});
+                }
+
+                const txList = JSON.parse(localStorage.getItem('dtf_transactions') || '[]');
+                if(txList.length > 0) {
+                    fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'saveTransactions', transactions: txList }) }).catch(e => {});
+                }
+
+            } catch (err) {
+                console.error("Sync error", err);
+                if(!isInit) Swal.fire('Sync Error', 'Gagal terhubung ke Spreadsheet. Periksa koneksi internet.', 'error');
+            }
+
+            if(!isInit) {
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+                icon.classList.remove('animate-spin');
+            }
+        }
+
+        // ---------------------------
+        // Dashboard Widgets Module
+        // ---------------------------
+        function updateDashboard() {
+            const totalProd = products.length;
+            const totalStock = products.reduce((acc, p) => acc + (parseInt(p.stock)||0), 0);
+            const lowStockItems = products.filter(p => (parseInt(p.stock)||0) <= settings.lowStock);
+            const estProfit = products.reduce((acc, p) => {
+                const s = parseInt(p.stock)||0;
+                if(s > 0) acc += (calculateProfit(p.price, p.cost) * s);
+                return acc;
+            }, 0);
+
+            document.getElementById('dashTotalProd').innerText = totalProd;
+            document.getElementById('dashTotalStock').innerText = totalStock;
+            document.getElementById('dashLowLimit').innerText = settings.lowStock;
+            document.getElementById('dashLowStock').innerText = lowStockItems.length;
+            document.getElementById('dashEstProfit').innerText = formatRp(estProfit);
+
+            // Populate table anomaly metric
+            const tbody = document.getElementById('lowStockTableBody');
+            tbody.innerHTML = '';
+            lowStockItems.slice(0, 10).forEach(p => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-white/5 hover:bg-white/5 transition duration-150">
+                        <td class="p-3 font-mono text-sm tracking-widest text-brand-300">${p.sku}</td>
+                        <td class="p-3 font-medium text-sm text-gray-200">${p.name}</td>
+                        <td class="p-3 font-black text-red-500 text-center">${p.stock}</td>
+                    </tr>
+                `;
+            });
+            if(lowStockItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-500 italic">Semua buffer level optimal.</td></tr>`;
+            }
+        }
+
+        // ---------------------------
+        // Table Indexing Inventory Component
+        // ---------------------------
+        function renderStockTable() {
+            const q = document.getElementById('searchStock').value.toLowerCase();
+            const tbody = document.getElementById('stockTableBody');
+            tbody.innerHTML = '';
+            
+            const filtered = products.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
+            
+            filtered.forEach(p => {
+                const profit = calculateProfit(p.price, p.cost);
+                tbody.innerHTML += `
+                    <tr class="hover:bg-brand-900/40 transition duration-200 border-b border-white/5 group">
+                        <td class="p-4 font-mono font-bold text-brand-400 text-sm tracking-widest">${p.sku}</td>
+                        <td class="p-4">
+                            <img src="${p.image || 'https://placehold.co/100x100/1e293b/fff?text=DTF'}" class="w-12 h-12 object-cover rounded shadow border border-gray-700 pointer-events-none" alt="img" onerror="this.src='https://placehold.co/100x100/1e293b/fff?text=Err'">
+                        </td>
+                        <td class="p-4 font-medium max-w-[200px] truncate group-hover:text-white text-gray-300" title="${p.name}">${p.name}</td>
+                        <td class="p-4 text-center relative">
+                            <span class="px-3 py-1 rounded-sm inline-block min-w-[3rem] font-bold ${p.stock <= settings.lowStock ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-gray-800 border border-gray-700 group-hover:border-brand-500 text-gray-200'}">${p.stock}</span>
+                        </td>
+                        <td class="p-4 text-right text-gray-400 font-medium">${formatRp(p.cost)}</td>
+                        <td class="p-4 text-right font-bold text-gray-300">${formatRp(p.price)}</td>
+                        <td class="p-4 text-right font-black text-green-500 bg-green-500/5">${formatRp(profit)}</td>
+                        <td class="p-4 text-center">
+                            <div class="flex justify-center gap-2">
+                                <button onclick="window.showQR('${p.sku}', '${p.name.replace(/'/g, "\\'")}')" class="p-2 bg-gray-700/80 hover:bg-white/10 rounded text-gray-300 transition" title="Mesin Print Barcode">
+                                    <i data-lucide="qr-code" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="editProduct('${p.id}')" class="p-2 bg-blue-500/20 hover:bg-blue-500 border border-blue-500/30 text-blue-400 hover:text-white rounded transition" title="Modifikasi Record">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteProduct('${p.id}')" class="p-2 bg-red-500/20 hover:bg-red-500 border border-red-500/30 text-red-400 hover:text-white rounded transition" title="Drop Mutasi Permanen">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        // CRUD Modal Handler
+        function openProductModal() {
+            document.getElementById('modalTitle').innerHTML = '<i data-lucide="box"></i> Registrasi Produk DB Baru';
+            document.getElementById('prodId').value = '';
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodSku').value = '';
+            document.getElementById('prodStock').value = 0;
+            document.getElementById('prodCost').value = 0;
+            document.getElementById('prodPrice').value = 0;
+            document.getElementById('prodImage').value = '';
+            document.getElementById('prodPreviewProfit').innerText = 'Rp 0';
+            document.getElementById('productModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.add('hidden');
+        }
+
+        // Dynamic Event binding for profit view
+        ['prodPrice', 'prodCost'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                const pr = parseInt(document.getElementById('prodPrice').value)||0;
+                const co = parseInt(document.getElementById('prodCost').value)||0;
+                document.getElementById('prodPreviewProfit').innerText = formatRp(calculateProfit(pr, co));
+            });
+        });
+
+        function saveProduct() {
+            const id = document.getElementById('prodId').value;
+            const sku = document.getElementById('prodSku').value.trim().toUpperCase();
+            const name = document.getElementById('prodName').value.trim();
+            const stock = parseInt(document.getElementById('prodStock').value)||0;
+            const cost = parseInt(document.getElementById('prodCost').value)||0;
+            const price = parseInt(document.getElementById('prodPrice').value)||0;
+            const image = document.getElementById('prodImage').value.trim();
+
+            if(!sku || !name) return Swal.fire('Parameter Negatif', 'Pastikan nama dan sku telah diisi spesifik.', 'warning');
+
+            if(id) {
+                const p = products.find(x => x.id === id);
+                if(p) {
+                    const diff = stock - p.stock;
+                    if(diff !== 0) logTransaction('AUDIT_UPD_STOCK', sku, name, diff);
+                    p.sku = sku; p.name = name; p.stock = stock;
+                    p.cost = cost; p.price = price; p.image = image;
+                }
+            } else {
+                if(products.find(x => x.sku === sku)) return Swal.fire('Duplikasi Entitas', 'Primary Key (SKU) ini sudah divalidasi dan hidup di DB.', 'error');
+                products.push({ id: generateId(), sku, name, stock, cost, price, image });
+                logTransaction('NEW_ENTRY_RELEASE', sku, name, stock);
+            }
+            saveData();
+            updateCalcDropdown();
+            closeProductModal();
+            renderStockTable();
+            Swal.fire({icon: 'success', title: 'Sinkronisasi Buffer LocalStorage Berhasil Ditulis', background:'#1f2937', color:'#fff', timer: 1500, showConfirmButton:false});
+        }
+
+        function editProduct(id) {
+            const p = products.find(x => x.id === id);
+            if(!p) return;
+            document.getElementById('modalTitle').innerHTML = '<i data-lucide="edit-3"></i> Tweak Data Node Master';
+            document.getElementById('prodId').value = p.id;
+            document.getElementById('prodName').value = p.name;
+            document.getElementById('prodSku').value = p.sku;
+            document.getElementById('prodStock').value = p.stock;
+            document.getElementById('prodCost').value = p.cost;
+            document.getElementById('prodPrice').value = p.price;
+            document.getElementById('prodImage').value = p.image;
+            document.getElementById('prodPreviewProfit').innerText = formatRp(calculateProfit(p.price, p.cost));
+            document.getElementById('productModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function deleteProduct(id) {
+            Swal.fire({
+                title: 'Drop Table Node?',
+                text: "Penghapusan bypass recycle bin dan permanen hilang dari tree localstorage.",
+                icon: 'warning',
+                showCancelButton: true,
+                background: '#0f172a', color: '#f8fafc',
+                confirmButtonColor: '#ef4444', cancelButtonColor: '#334155',
+                confirmButtonText: '<i class="lucide-trash"></i> Sanggup eksekusi!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const p = products.find(x => x.id === id);
+                    if(p) logTransaction('DROP_ENT_PERM', p.sku, p.name, -p.stock);
+                    products = products.filter(x => x.id !== id);
+                    saveData();
+                    renderStockTable();
+                    updateCalcDropdown();
+                }
+            })
+        }
+
+        // ---------------------------
+        // Gallery Presentation
+        // ---------------------------
+        function renderGallery() {
+            const q = document.getElementById('searchGallery').value.toLowerCase();
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = '';
+            
+            const filtered = products.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
+            
+            filtered.forEach(p => {
+                const stockCls = p.stock <= settings.lowStock ? 'text-red-400 bg-red-500/10 border-red-500/50' : 'text-gray-300 bg-gray-800 border-gray-700';
+                grid.innerHTML += `
+                    <div class="glass-panel p-2 flex flex-col group relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_10px_25px_rgba(59,130,246,0.3)] border border-white/5 hover:border-brand-500">
+                        <div class="h-44 w-full mb-3 rounded-lg overflow-hidden bg-black/40 relative">
+                            <img loading="lazy" src="${p.image || 'https://placehold.co/300x300/1e293b/fff?text=No+Ref'}" class="w-full h-full object-cover transition duration-700 group-hover:scale-125 group-hover:opacity-60" alt="${p.name}" onerror="this.src='https://placehold.co/300x300/1e293b/fff?text=Err'">
+                            <div class="absolute inset-x-0 bottom-0 top-1/2 bg-gradient-to-t from-black/80 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition duration-300"></div>
+                            
+                            <div class="absolute top-2 right-2 bg-black/70 backdrop-blur shadow-md text-[10px] font-mono px-2 py-1 rounded border border-white/20 tracking-wider font-bold">
+                                ${p.sku}
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-sm leading-snug flex-1 mb-3 line-clamp-2 text-gray-200 group-hover:text-brand-300 transition" title="${p.name}">${p.name}</h4>
+                        <div class="flex flex-col gap-1 border-t border-white/10 pt-3 mt-auto">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-500">On-hand Buffer:</span>
+                                <span class="font-bold font-mono px-2 rounded border ${stockCls}">${p.stock}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs mt-1">
+                                <span class="text-gray-500">MSRP:</span>
+                                <span class="text-sm font-bold text-brand-400">${formatRp(p.price)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // ---------------------------
+        // QR Code Hardware Print Bridge
+        // ---------------------------
+        let currentQRCode = null;
+        window.showQR = (sku, name) => {
+            document.getElementById('qrProdName').innerText = name.toUpperCase();
+            document.getElementById('qrProdSku').innerText = sku;
+            const container = document.getElementById('qrCodeContainer');
+            container.innerHTML = '';
+            currentQRCode = new QRCode(container, {
+                text: sku,
+                width: 220,
+                height: 220,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            document.getElementById('qrModal').classList.remove('hidden');
+        };
+
+        function downloadQR() {
+            const canvas = document.querySelector('#qrCodeContainer canvas');
+            if(canvas) {
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL("image/png");
+                a.download = `LABEL_${document.getElementById('qrProdSku').innerText}.png`;
+                a.click();
+            }
+        }
+
+        // ---------------------------
+        // Barcode Interfacing & Scan HW Hub
+        // ---------------------------
+        let html5QrcodeScanner = null;
+        let scannedProduct = null;
+
+        function startScanner() {
+            const config = { fps: 10, qrbox: 250 };
+            document.getElementById('scanResult').classList.add('hidden');
+            document.getElementById('reader').classList.remove('hidden');
+            document.getElementById('stopCameraBtn').classList.remove('hidden');
+
+            if(html5QrcodeScanner) {
+                try { html5QrcodeScanner.clear(); } catch(e){}
+            }
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length) {
+                    let camId = devices[devices.length - 1].id; // Ambil kamera belakang
+                    html5QrcodeScanner.start(camId, config, onScanSuccess)
+                    .catch(e => Swal.fire('Akses Kamera', 'Gagal membuka kamera, pastikan tidak ada aplikasi lain yang memakainya.', 'error'));
+                } else {
+                    Swal.fire('Kamera Tidak Ada', 'Perangkat tidak memiliki kamera.', 'warning');
+                }
+            }).catch(err => {
+                Swal.fire('Akses Ditolak', 'Ijinkan (Allow) akses kamera pada browser.', 'error');
+            });
+        }
+
+        function stopScanner() {
+            if(html5QrcodeScanner) {
+                try {
+                    html5QrcodeScanner.stop().then(()=>{
+                        document.getElementById('reader').classList.add('hidden');
+                        document.getElementById('stopCameraBtn').classList.add('hidden');
+                        html5QrcodeScanner.clear();
+                        html5QrcodeScanner = null;
+                    }).catch(e => {
+                        document.getElementById('reader').classList.add('hidden');
+                        document.getElementById('stopCameraBtn').classList.add('hidden');
+                    });
+                } catch(e) {}
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            stopScanner();
+            const skuStr = decodedText.trim();
+            // Robust case-insensitive search
+            const p = products.find(x => String(x.sku).trim().toUpperCase() === skuStr.toUpperCase());
+            
+            document.getElementById('scanResult').classList.remove('hidden');
+            if(p) {
+                scannedProduct = p;
+                document.getElementById('scannedImage').src = p.image || 'https://placehold.co/150x150/1e293b/fff?text=DTF';
+                document.getElementById('scannedName').innerText = p.name;
+                document.getElementById('scannedSku').innerText = `ID Validated: ${p.sku}`;
+                document.getElementById('scannedStock').innerText = p.stock;
+            } else {
+                scannedProduct = null;
+                document.getElementById('scannedImage').src = 'https://placehold.co/150x150/red/fff?text=x';
+                document.getElementById('scannedName').innerText = "Produk Belum Terdaftar 🤔";
+                document.getElementById('scannedSku').innerText = `Barcode Scanned: ${skuStr}`;
+                document.getElementById('scannedStock').innerText = "-";
+            }
+        }
+
+        function resetScan() {
+            document.getElementById('scanResult').classList.add('hidden');
+            startScanner();
+        }
+
+        function handleScanAction(type) {
+            if(!scannedProduct) return Swal.fire('Error Context', 'Pointer objek referensi tidak valid di memory. Ulangi scan!', 'warning');
+            
+            if(type === 'reduce' && scannedProduct.stock <= 0) {
+                return Swal.fire('Logika Dilarang', 'Operasi drop gagal. Parameter balance stock minus/habis!', 'error');
+            }
+            
+            const diff = type === 'add' ? 1 : -1;
+            scannedProduct.stock += diff;
+            
+            logTransaction(type==='add'?'INBOUND_LOG':'OUTBOUND_SHIP', scannedProduct.sku, scannedProduct.name, diff);
+            
+            saveData();
+            document.getElementById('scannedStock').innerText = scannedProduct.stock;
+            
+            // tiny UX feedback ping
+            const el = document.getElementById('scannedStock');
+            el.classList.add('scale-150', type==='add'?'text-green-500':'text-red-500');
+            setTimeout(()=> el.classList.remove('scale-150', 'text-green-500', 'text-red-500'), 400);
+
+            // Toast HUD
+            Swal.fire({
+                toast: true, position: 'top-end', showConfirmButton: false, timer: 1500,
+                icon: type==='add' ? 'success' : 'info', 
+                title: `Database write: ${type==='add'?'+1 Injekt':'1 Dikurangi'}`, 
+                background: '#0f172a', color:'#38bdf8', iconColor: type==='add' ? '#10b981':'#ef4444'
+            });
+        }
+
+        // ---------------------------
+        // Image Vision (Tesseract OCR)
+        // ---------------------------
+        let selectedOcrFile = null;
+        let matchedSkusList = [];
+
+        function handleReceiptUpload(e) {
+            const file = e.target.files[0];
+            if(file) {
+                selectedOcrFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('ocrPreviewImg').src = e.target.result;
+                    document.getElementById('ocrPreviewContainer').classList.remove('hidden');
+                    document.getElementById('ocrResultBox').classList.add('hidden');
+                    document.getElementById('btnProcessOcr').classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function processOCR() {
+            if(!selectedOcrFile) return;
+            const btn = document.getElementById('btnProcessOcr');
+            const progressCont = document.getElementById('ocrProgressContainer');
+            const prgBar = document.getElementById('ocrProgressBar');
+            const prgText = document.getElementById('ocrPercent');
+            
+            btn.classList.add('hidden');
+            progressCont.classList.remove('hidden');
+
+            try {
+                // Initialize WASM build of tessaract lib
+                const worker = await Tesseract.createWorker({
+                    logger: m => {
+                        if(m.status === 'recognizing text') {
+                            const pct = Math.round(m.progress * 100);
+                            prgBar.style.width = `${pct}%`;
+                            prgText.innerText = `${pct}%`;
+                        }
+                    }
+                });
+                
+                await worker.loadLanguage('eng');
+                await worker.initialize('eng');
+                const { data: { text } } = await worker.recognize(selectedOcrFile);
+                await worker.terminate(); // Free memory
+                
+                document.getElementById('ocrRawText').innerText = text;
+                progressCont.classList.add('hidden');
+                
+                matchedSkusList = [];
+                // String norm parsing
+                const cleantxt = text.replace(/\n/g, ' '); 
+                
+                // Algoritma O(n): match the existing SKUs subset in the blob string pattern
+                products.forEach(p => {
+                    if(p.sku.length > 2 && cleantxt.includes(p.sku)) {
+                        matchedSkusList.push(p);
+                    }
+                });
+
+                const skuBox = document.getElementById('ocrMatchedSkus');
+                skuBox.innerHTML = '';
+                if(matchedSkusList.length > 0) {
+                    matchedSkusList.forEach(m => {
+                        skuBox.innerHTML += `
+                            <div class="flex justify-between items-center bg-gray-800/80 p-3 rounded-lg border border-gray-600 shadow-md">
+                                <div><b class="text-brand-300 font-mono tracking-wide">${m.sku}</b> <span class="text-sm block text-gray-400 mt-1 truncate max-w-[200px]">${m.name}</span></div>
+                                <div class="text-right text-xs bg-red-500/10 p-2 rounded border border-red-500/20"><span class="text-red-400 font-bold block mb-1">Kurangi Qty 1</span> (Stock Rem: ${m.stock})</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    skuBox.innerHTML = '<p class="text-yellow-400 text-sm bg-yellow-400/10 p-3 rounded text-center">Nir-referensi! Parser neural gagal mendeteksi satupun string SKU valid dari citra gambar.</p>';
+                    document.querySelector('#ocrResultBox button').style.display = 'none';
+                }
+                
+                if(matchedSkusList.length > 0) {
+                    document.querySelector('#ocrResultBox button').style.display = 'flex';
+                }
+
+                document.getElementById('ocrResultBox').classList.remove('hidden');
+
+            } catch(e) {
+                progressCont.classList.add('hidden');
+                btn.classList.remove('hidden');
+                Swal.fire('Engine Exception Core', 'Kompilasi OCR fail state. Ulangi ambil gambar re-focus layout teks jelas!', 'error');
+                console.error(e);
+            }
+        }
+
+        function confirmOcrReduction() {
+            if(matchedSkusList.length === 0) return;
+            Swal.fire({
+                title: 'Jalankan Sinkronisasi Pengepakan?',
+                text: `Sistem mencocokan ${matchedSkusList.length} entiti. Masing-masing dikurangi 1pcs pada database. Lanjutkan write node?`,
+                icon: 'question', showCancelButton: true, background: '#0f172a', color: '#f8fafc',
+                confirmButtonColor: '#10b981', confirmButtonText: '<i class="lucide-check"></i> Proses Final Eksekusi'
+            }).then((res) => {
+                if(res.isConfirmed) {
+                    matchedSkusList.forEach(m => {
+                        const p = products.find(x => x.id === m.id);
+                        if(p && p.stock > 0) {
+                            p.stock -= 1;
+                            logTransaction('INTELLIGENCE_OCR_OUT', p.sku, p.name, -1);
+                        }
+                    });
+                    saveData();
+                    Swal.fire({icon: 'success', title: 'Commit Sukses Tersimpan!', background:'#0f172a', color:'#10b981', timer: 2000});
+                    document.getElementById('ocrResultBox').classList.add('hidden');
+                    document.getElementById('btnProcessOcr').classList.remove('hidden');
+                    document.getElementById('ocrPreviewContainer').classList.add('hidden');
+                }
+            })
+        }
+
+        // ---------------------------
+        // AdSpend Roas Analytics Kernel
+        // ---------------------------
+        function updateCalcDropdown() {
+            const sel = document.getElementById('calcSelectProduct');
+            sel.innerHTML = '<option value="">-- Mode Simulasi Bebas --</option>';
+            products.forEach(p => {
+                sel.innerHTML += `<option value="${p.id}">SKU ${p.sku} (${formatRp(p.price)})</option>`;
+            });
+        }
+        
+        function runCalculator() {
+            const id = document.getElementById('calcSelectProduct').value;
+            const qty = parseInt(document.getElementById('calcTargetQty').value) || 0;
+            const adSpend = parseInt(document.getElementById('calcAdSpend').value) || 0;
+            document.getElementById('txtSetAdmin').innerText = settings.adminFee;
+            
+            let price = 50000, cost = 25000; // generic fallback numbers
+            if(id) {
+                const p = products.find(x => x.id === id);
+                if(p) { price = p.price; cost = p.cost; }
+            }
+            
+            const omset = price * qty;
+            const adminTotal = (price * (settings.adminFee/100) + settings.flatFee) * qty;
+            const opsTotal = settings.opCost * qty;
+            const costTotal = (cost * qty) + adminTotal + opsTotal;
+            const netProfit = omset - costTotal - adSpend;
+            const roas = adSpend > 0 ? (omset / adSpend).toFixed(2) : 0;
+
+            document.getElementById('resOmset').innerText = formatRp(omset);
+            document.getElementById('resRoas').innerText = roas + ' x';
+            document.getElementById('resCost').innerText = formatRp(costTotal);
+            
+            const npEl = document.getElementById('resNetProfit');
+            npEl.innerText = formatRp(netProfit);
+            npEl.className = netProfit >= 0 ? "text-2xl font-bold text-green-400 z-10 relative drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-2xl font-bold text-red-500 z-10 relative drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]";
+        }
+
+        // ---------------------------
+        // Global Local Configurations
+        // ---------------------------
+        function loadSettingsForm() {
+            document.getElementById('setAdminFee').value = settings.adminFee;
+            document.getElementById('setFlatFee').value = settings.flatFee;
+            document.getElementById('setOpCost').value = settings.opCost;
+            document.getElementById('setLowStock').value = settings.lowStock;
+            document.getElementById('setGasUrl').value = settings.gasUrl;
+        }
+
+        function saveSettings() {
+            settings = {
+                adminFee: parseFloat(document.getElementById('setAdminFee').value) || 0,
+                flatFee: parseInt(document.getElementById('setFlatFee').value) || 0,
+                opCost: parseInt(document.getElementById('setOpCost').value) || 0,
+                lowStock: parseInt(document.getElementById('setLowStock').value) || 0,
+                gasUrl: document.getElementById('setGasUrl').value.trim()
+            };
+            localStorage.setItem('dtf_settings', JSON.stringify(settings));
+            Swal.fire({icon: 'success', title: 'Global state tersimpan ke storage', background:'#1f2937', color:'#38bdf8', timer:2000, showConfirmButton:false});
+            runCalculator();
+            updateDashboard();
+        }
+
+    </script>
+</body>
+</html>
