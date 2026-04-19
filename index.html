@@ -619,7 +619,30 @@
             updateCalcDropdown();
         });
 
-        async function syncData(isInit = false) {
+        // Push semua produk ke Google Spreadsheet
+        async function pushProductsToGAS() {
+            if (!GAS_URL) return;
+            try {
+                const payload = products.map(p => ({
+                    id: p.id,
+                    nama: p.name,
+                    sku: p.sku,
+                    harga: p.price,
+                    hpp: p.cost,
+                    stok: p.stock,
+                    gambar: p.image || '',
+                    kategori: ''
+                }));
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'saveProducts', products: payload })
+                });
+            } catch(e) {
+                console.error('Push GAS error', e);
+            }
+        }
+
+                async function syncData(isInit = false) {
             const btn = document.getElementById('syncBtn');
             const icon = document.getElementById('syncIcon');
             if(!isInit) {
@@ -800,10 +823,11 @@
                 logTransaction('NEW_ENTRY_RELEASE', sku, name, stock);
             }
             saveData();
+            pushProductsToGAS();
             updateCalcDropdown();
             closeProductModal();
             renderStockTable();
-            Swal.fire({icon: 'success', title: 'Sinkronisasi Buffer LocalStorage Berhasil Ditulis', background:'#1f2937', color:'#fff', timer: 1500, showConfirmButton:false});
+            Swal.fire({icon: 'success', title: 'Produk Tersimpan!', background:'#1f2937', color:'#fff', timer: 1500, showConfirmButton:false});
         }
 
         function editProduct(id) {
@@ -837,6 +861,7 @@
                     if(p) logTransaction('DROP_ENT_PERM', p.sku, p.name, -p.stock);
                     products = products.filter(x => x.id !== id);
                     saveData();
+                    pushProductsToGAS();
                     renderStockTable();
                     updateCalcDropdown();
                 }
